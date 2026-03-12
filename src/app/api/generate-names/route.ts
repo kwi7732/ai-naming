@@ -188,7 +188,13 @@ function sendTelegramAlert(form: NamingForm, results: AIResult[]): void {
   const kst = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
   const statusLine = results
-    .map((r) => `  • ${r.label}: ${r.error ? "❌ 실패" : `✅ ${(r.durationMs / 1000).toFixed(1)}s`}`)
+    .map((r) => {
+      const status = r.error ? "❌ 실패" : `✅ ${(r.durationMs / 1000).toFixed(1)}s`;
+      const namesList = r.names?.length
+        ? r.names.map(n => `${form.lastName}${n.name}(${n.hanja})`).join(", ")
+        : "없음";
+      return `  • ${r.label}: ${status}\n    → ${namesList}`;
+    })
     .join("\n");
 
   const text = [
@@ -202,7 +208,7 @@ function sendTelegramAlert(form: NamingForm, results: AIResult[]): void {
     `  성씨: ${form.lastName} / 성별: ${genderMap[form.babyGender]}`,
     form.babyDueDate ? `  출생 예정일: ${form.babyDueDate}` : null,
     ``,
-    `🤖 *전문가 응답*`,
+    `📝 *추천 이름*`,
     statusLine,
     ``,
     `🕐 ${kst}`,
