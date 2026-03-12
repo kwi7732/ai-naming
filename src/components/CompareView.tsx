@@ -52,7 +52,7 @@ function NameCard({
               {lastName}{s.name}
             </span>
             <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.45)" }}>
-              {s.hanja}
+              {s.hanja}{s.meaning ? ` · ${s.meaning.split('.')[0].split(',')[0].substring(0, 30)}` : ""}
             </span>
           </div>
           {/* Virtues */}
@@ -100,7 +100,7 @@ function NameCard({
                 className="rounded-lg p-3"
                 style={{ background: `${color}0d`, border: `1px solid ${color}22` }}
               >
-                <p style={{ fontSize: "0.68rem", fontWeight: 700, color, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>스토리</p>
+                <p style={{ fontSize: "0.68rem", fontWeight: 700, color, marginBottom: 4, letterSpacing: "0.05em" }}>✦ 작명 이야기</p>
                 <p className="font-serif" style={{ fontSize: "0.82rem", lineHeight: 1.8, color: "rgba(240,246,252,0.9)", wordBreak: "keep-all" }}>
                   {s.story}
                 </p>
