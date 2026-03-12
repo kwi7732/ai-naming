@@ -47,7 +47,8 @@ ${form.excludedNames && form.excludedNames.length > 0
 
 [JSON 작성 시 주의사항 - 절대 지킬 것]
 1. 아래 JSON 배열 형식으로만 응답하세요. JSON 외 어떤 텍스트도 출력하지 마세요.
-2. 값(Value) 내부에 쌍따옴표(")를 절대 사용하지 마세요. (예: "태양"처럼 강조할 때는 작은따옴표(') 사용)
+2. 값(Value) 내부에 쌍따옴표(")를 절대 사용하지 마세요. (예: '태양'처럼 강조할 때는 작은따옴표(') 사용)
+3. name 필드에는 반드시 이름만 넣으세요. 성씨(${form.lastName})를 절대 포함하지 마세요. (예: '서준' ⭕, '${form.lastName}서준' ❌)
 
 [
   {
@@ -249,15 +250,27 @@ export async function POST(req: NextRequest) {
       label: string,
       vendor: string,
       color: string
-    ): AIResult => ({
-      model,
-      label,
-      vendor,
-      color,
-      names: r.status === "fulfilled" ? r.value.names : [],
-      error: r.status === "rejected" ? String(r.reason) : null,
-      durationMs: r.status === "fulfilled" ? r.value.durationMs : 0,
-    });
+    ): AIResult => {
+      // AI가 name에 성씨를 포함시킨 경우 자동 제거 (예: "김서준" → "서준")
+      const cleanedNames = r.status === "fulfilled"
+        ? r.value.names.map(n => ({
+            ...n,
+            name: n.name.startsWith(form.lastName)
+              ? n.name.slice(form.lastName.length)
+              : n.name
+          }))
+        : [];
+
+      return {
+        model,
+        label,
+        vendor,
+        color,
+        names: cleanedNames,
+        error: r.status === "rejected" ? String(r.reason) : null,
+        durationMs: r.status === "fulfilled" ? r.value.durationMs : 0,
+      };
+    };
 
     const results: AIResult[] = [
       toResult(gptRes, "gpt", "GPT-4o mini", "OpenAI", "#10a37f"),
