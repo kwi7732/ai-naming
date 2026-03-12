@@ -51,17 +51,19 @@ export default function Home() {
 
   const handleLoadMore = () => {
     if (!formSnap) return;
-    // 현재 결과 중 가장 긴 names 배열 길이를 기준으로 가능 여부 판단
-    // (일부 AI가 오류로 0개를 반환하더라도, 정상 반환한 AI의 캐시를 먼저 소진하도록 함)
-    const maxAvailable = Math.max(...results.map(r => r.names?.length ?? 0));
-    const nextIndex = pageIndex + 1;
     
-    if ((nextIndex + 1) * 3 <= maxAvailable) {
-      // 캐시(이미 받아온 결과)에 다음 3개가 충분히 있으면 즉시 보여줌
+    const nextIndex = pageIndex + 1;
+    const nextStart = nextIndex * 3;
+    
+    // 성공한 AI들 중에서 다음 페이지에 보여줄 이름이 1개라도 남아있는지 확인
+    const hasMoreNames = results.some(r => (r.names?.length ?? 0) > nextStart);
+    
+    if (hasMoreNames) {
+      // 캐시에 아직 보여줄 이름이 있으면 즉시 표시 (API 호출 없음)
       setPageIndex(nextIndex);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      // 캐시가 고갈되었으면 API 새로 호출
+      // 캐시가 완전히 고갈되었으면 API 새로 호출
       // 현재까지 모인 모든 이름들을 excludedNames에 담아서 중복 방지
       const allSeenNames = results.flatMap(r => r.names?.map(n => n.name) || []);
       const uniqueExcluded = Array.from(new Set([

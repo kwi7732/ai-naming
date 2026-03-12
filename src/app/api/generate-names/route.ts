@@ -72,11 +72,11 @@ async function callGPT(prompt: string): Promise<{ names: NameSuggestion[]; durat
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.85,
-    max_tokens: 5000,
+    max_tokens: 8192,
   });
   const raw = (res.choices[0].message.content ?? "[]").replace(/```json|```/g, "").trim();
   const result = { names: JSON.parse(raw), durationMs: Date.now() - t };
-  console.log(`[GPT] ✅ 완료 ${result.durationMs}ms`);
+  console.log(`[GPT] ✅ 완료 ${result.durationMs}ms — 이름 ${result.names.length}개 생성`);
   return result;
 }
 
@@ -86,13 +86,13 @@ async function callClaude(prompt: string): Promise<{ names: NameSuggestion[]; du
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const msg = await client.messages.create({
     model: "claude-haiku-4-5",
-    max_tokens: 5000,
+    max_tokens: 8192,
     messages: [{ role: "user", content: prompt }],
   });
   const raw = (msg.content[0].type === "text" ? msg.content[0].text : "[]")
     .replace(/```json|```/g, "").trim();
   const result = { names: JSON.parse(raw), durationMs: Date.now() - t };
-  console.log(`[Claude] ✅ 완료 ${result.durationMs}ms`);
+  console.log(`[Claude] ✅ 완료 ${result.durationMs}ms — 이름 ${result.names.length}개 생성`);
   return result;
 }
 
@@ -113,7 +113,7 @@ async function callGemini(prompt: string): Promise<{ names: NameSuggestion[]; du
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.85,
-        maxOutputTokens: 5000,
+        maxOutputTokens: 8192,
         responseMimeType: "application/json"
       },
     }),
@@ -170,11 +170,11 @@ async function callGrok(prompt: string): Promise<{ names: NameSuggestion[]; dura
     model: "grok-4-fast",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.85,
-    max_tokens: 5000,
+    max_tokens: 8192,
   });
   const raw = (res.choices[0].message.content ?? "[]").replace(/```json|```/g, "").trim();
   const result = { names: JSON.parse(raw), durationMs: Date.now() - t };
-  console.log(`[Grok] ✅ 완료 ${result.durationMs}ms`);
+  console.log(`[Grok] ✅ 완료 ${result.durationMs}ms — 이름 ${result.names.length}개 생성`);
   return result;
 }
 
