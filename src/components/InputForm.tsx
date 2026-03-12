@@ -95,15 +95,61 @@ export default function InputForm({ onSubmit, isLoading }: Props) {
             />
           </div>
           {/* 날짜 */}
-          <div>
+          <div style={{ gridColumn: "1 / -1" }}>
             <label className="label">출생 / 예정일</label>
-            <input
-              id="baby-date"
-              type="date"
-              className="field"
-              value={form.babyDueDate}
-              onChange={(e) => set("babyDueDate", e.target.value)}
-            />
+            <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+              <select
+                id="baby-year"
+                className="field"
+                value={form.babyDueDate.split("-")[0] || ""}
+                onChange={(e) => {
+                  const parts = form.babyDueDate.split("-");
+                  const y = e.target.value;
+                  const m = parts[1] || "";
+                  const d = parts[2] || "";
+                  set("babyDueDate", [y, m, d].join("-"));
+                }}
+              >
+                <option value="">년도 모름</option>
+                {Array.from({ length: 5 }, (_, i) => 2025 + i).map(y => (
+                  <option key={y} value={String(y)}>{y}년</option>
+                ))}
+              </select>
+              <select
+                id="baby-month"
+                className="field"
+                value={form.babyDueDate.split("-")[1] || ""}
+                onChange={(e) => {
+                  const parts = form.babyDueDate.split("-");
+                  const y = parts[0] || "";
+                  const m = e.target.value;
+                  const d = parts[2] || "";
+                  set("babyDueDate", [y, m, d].join("-"));
+                }}
+              >
+                <option value="">월 모름</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                  <option key={m} value={String(m).padStart(2, "0")}>{m}월</option>
+                ))}
+              </select>
+              <select
+                id="baby-day"
+                className="field"
+                value={form.babyDueDate.split("-")[2] || ""}
+                onChange={(e) => {
+                  const parts = form.babyDueDate.split("-");
+                  const y = parts[0] || "";
+                  const m = parts[1] || "";
+                  const d = e.target.value;
+                  set("babyDueDate", [y, m, d].join("-"));
+                }}
+              >
+                <option value="">일 모름</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                  <option key={d} value={String(d).padStart(2, "0")}>{d}일</option>
+                ))}
+              </select>
+            </div>
           </div>
           {/* 성별 (span 2) */}
           <div style={{ gridColumn: "1 / -1" }}>
