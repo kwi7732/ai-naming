@@ -6,10 +6,13 @@ import { RefreshCw, Sparkles } from "lucide-react";
 import InputForm from "@/components/InputForm";
 import CompareView from "@/components/CompareView";
 import LoadingState from "@/components/LoadingState";
+import { getMockResults } from "@/lib/mockData";
 import type { NamingForm, AIResult } from "@/types";
 import toast from "react-hot-toast";
 
 type Page = "home" | "loading" | "results";
+
+const isDev = process.env.NODE_ENV === "development";
 
 export default function Home() {
   const [page, setPage] = useState<Page>("home");
@@ -26,21 +29,31 @@ export default function Home() {
     }
     setPage("loading");
     try {
-      const res = await fetch("/api/generate-names", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ form }),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error || "서버 오류");
+      let data: { results: AIResult[]; prompt: string; sessionId: string };
+
+      if (isDev) {
+        // 🔧 로컬 개발: Mock 데이터 사용 (API 호출 없음)
+        await new Promise((r) => setTimeout(r, 1000));
+        data = getMockResults();
+      } else {
+        // 🚀 프로덕션: 실제 API 호출
+        const res = await fetch("/api/generate-names", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ form }),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.error || "서버 오류");
+        }
+        data = await res.json();
       }
-      const data = await res.json();
+
       setResults(data.results);
       setPrompt(data.prompt);
       setSessionId(data.sessionId);
       if (isLoadMore) {
-        setPageIndex(0); // 새 데이터 받아오면 다시 0번 인덱스부터 보여줌
+        setPageIndex(0);
       }
       setPage("results");
     } catch (e: unknown) {
@@ -84,52 +97,62 @@ export default function Home() {
       {/* ── Header ───────────────────────────────────── */}
       <header
         className="text-center px-4"
-        style={{ padding: "2.5rem 1rem 1.5rem" }}
+        style={{ padding: page === "home" ? "2.5rem 1rem 1.5rem" : "1rem 1rem 0.5rem" }}
       >
         <motion.div
           initial={{ opacity: 0, y: -14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* badge */}
-          <div
-            className="inline-flex items-center gap-1.5 mb-4"
-            style={{
-              padding: "0.3rem 0.85rem",
-              borderRadius: 99,
-              background: "rgba(201,169,110,0.1)",
-              border: "1px solid rgba(201,169,110,0.25)",
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              color: "var(--gold)",
-              letterSpacing: "0.03em",
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--gold)", display: "inline-block" }} />
-            4인의 작명 전문가 패널
-          </div>
+          {/* badge — 홈에서만 */}
+          {page === "home" && (
+            <div
+              className="inline-flex items-center gap-1.5 mb-4"
+              style={{
+                padding: "0.3rem 0.85rem",
+                borderRadius: 99,
+                background: "rgba(201,169,110,0.1)",
+                border: "1px solid rgba(201,169,110,0.25)",
+                fontSize: "0.72rem",
+                fontWeight: 600,
+                color: "var(--gold)",
+                letterSpacing: "0.03em",
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--gold)", display: "inline-block" }} />
+              4인의 작명 전문가 패널
+            </div>
+          )}
 
           <h1
             className="font-serif text-gradient"
-            style={{ fontSize: "clamp(2rem, 6vw, 3rem)", fontWeight: 700, lineHeight: 1.2 }}
+            style={{
+              fontSize: page === "home" ? "clamp(2rem, 6vw, 3rem)" : "clamp(1.1rem, 3vw, 1.4rem)",
+              fontWeight: 700,
+              lineHeight: 1.2,
+            }}
           >
             AI 작명소
           </h1>
-          <p
-            className="font-serif"
-            style={{
-              fontSize: "clamp(0.82rem, 2vw, 0.95rem)",
-              color: "var(--muted)",
-              marginTop: "0.6rem",
-              lineHeight: 1.7,
-              wordBreak: "keep-all",
-            }}
-          >
-            4인의 작명 전문가가 각자의 감각으로 이름을 제안합니다 — 비교하고 직접 선택하세요
-          </p>
+
+          {/* 설명 — 홈에서만 */}
+          {page === "home" && (
+            <p
+              className="font-serif"
+              style={{
+                fontSize: "clamp(0.82rem, 2vw, 0.95rem)",
+                color: "var(--muted)",
+                marginTop: "0.6rem",
+                lineHeight: 1.7,
+                wordBreak: "keep-all",
+              }}
+            >
+              4인의 작명 전문가가 각자의 감각으로 이름을 제안합니다 — 비교하고 직접 선택하세요
+            </p>
+          )}
         </motion.div>
 
-        {/* AI brand pills */}
+        {/* AI brand pills — 홈에서만 */}
         {page === "home" && (
           <motion.div
             className="flex items-center justify-center gap-2 mt-4 flex-wrap"
@@ -170,7 +193,7 @@ export default function Home() {
       <div style={{ height: 1, background: "rgba(255,255,255,0.05)", width: "100%", margin: "0 0 1.5rem" }} />
 
       {/* ── Content ──────────────────────────────────── */}
-      <div className="flex-1 w-full px-4 pb-16" style={{ maxWidth: 980, margin: "0 auto" }}>
+      <div className="flex-1 w-full pb-16" style={{ maxWidth: 980, margin: "0 auto", paddingLeft: 24, paddingRight: 24 }}>
         <AnimatePresence mode="wait">
           {page === "home" && (
             <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
