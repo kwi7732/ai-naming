@@ -96,6 +96,48 @@ async function callClaude(prompt: string): Promise<{ names: NameSuggestion[]; du
   return result;
 }
 
+/**
+ * Gemini 응답에서 가장 바깥쪽 JSON 배열 `[...]`만 안전하게 추출.
+ * 배열 뒤에 붙는 설명 텍스트나 중첩 따옴표 문제를 모두 방지.
+ */
+function extractJsonArray(text: string): string {
+  const start = text.indexOf("[");
+  if (start === -1) return "[]";
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === "[") depth++;
+    else if (ch === "]") {
+      depth--;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  // 닫는 괄호가 부족한 경우 — 강제로 닫기
+  return text.slice(start) + "]".repeat(depth);
+}
+
 async function callGemini(prompt: string): Promise<{ names: NameSuggestion[]; durationMs: number }> {
   const t = Date.now();
   console.log("[Gemini] 입력 프롬프트:\n", prompt);
@@ -108,7 +150,6 @@ async function callGemini(prompt: string): Promise<{ names: NameSuggestion[]; du
       "Content-Type": "application/json",
       "x-goog-api-key": key,
     },
-    // 강제로 JSON 포맷 응답 지시 (Gemini 1.5+ 지원 설정 활용)
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -127,27 +168,27 @@ async function callGemini(prompt: string): Promise<{ names: NameSuggestion[]; du
   const json = await res.json();
   let raw = (json.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]");
 
-  // 마크다운 코드 블록 제거 및 찌꺼기 텍스트 정리
+  // 마크다운 코드 블록 제거
   raw = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
 
-  // Gemini가 문자열 내분에 따옴표(")를 이스케이프 처리 없이 써서 깨지는 경우를 대비
-  // 가장 흔한 원인인 Unterminated string 오류 완화 (완벽하진 않으나 대부분 해결)
-  // 정규식으로 안전하게 처리하기 어려우므로, 프롬프트에서 더 강력하게 지시하는 것이 최선임
+  // 핵심: 가장 바깥쪽 JSON 배열만 추출 (뒤에 붙는 쓰레기 텍스트 무시)
+  const cleanJson = extractJsonArray(raw);
 
   let names = [];
   try {
-    names = JSON.parse(raw);
+    names = JSON.parse(cleanJson);
   } catch (e) {
-    console.error("[Gemini] JSON 파싱 실패! 넘어온 원본 텍스트:\n", raw);
+    console.error("[Gemini] JSON 파싱 실패! 추출된 JSON:\n", cleanJson);
+    console.error("[Gemini] 원본 텍스트:\n", raw);
 
-    // 마지막 시도: 만약 JSON이 중간에 짤렸다면 (Unterminated string) 강제로 닫아봄
+    // 마지막 시도: Unterminated string → 강제로 닫기
     if (e instanceof SyntaxError && e.message.includes("Unterminated string")) {
       try {
-        const mended = raw + '"} \n]';
+        const mended = cleanJson + '"} ]';
         names = JSON.parse(mended);
         console.warn("[Gemini] 강제로 JSON을 닫아서 파싱 성공함");
-      } catch (mendedError) {
-        throw new Error(`Gemini JSON 파싱 오류(복구 불가): ${e.message}\n응답 원문: ${raw.slice(0, 100)}...`);
+      } catch {
+        throw new Error(`Gemini JSON 파싱 오류(복구 불가): ${e.message}\n응답 원문: ${raw.slice(0, 200)}...`);
       }
     } else {
       throw new Error(`Gemini JSON 파싱 오류: ${e instanceof Error ? e.message : String(e)}`);
@@ -155,7 +196,7 @@ async function callGemini(prompt: string): Promise<{ names: NameSuggestion[]; du
   }
 
   const parsed = { names, durationMs: Date.now() - t };
-  console.log(`[Gemini] ✅ 완료 ${parsed.durationMs}ms`);
+  console.log(`[Gemini] ✅ 완료 ${parsed.durationMs}ms — 이름 ${names.length}개 생성`);
   return parsed;
 }
 
