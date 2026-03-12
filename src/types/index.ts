@@ -19,6 +19,7 @@ export interface NamingForm {
 export interface NameSuggestion {
   name: string;          // 이름 (한글, 성씨 제외)
   hanja: string;         // 한자 표기
+  hanjaReading: string;  // 한자 훈음 (예: "슬기 지, 비 우")
   meaning: string;       // 뜻 설명
   story: string;         // 부부 이름과 연결한 스토리텔링
   pronunciation: string; // 발음·음운 설명

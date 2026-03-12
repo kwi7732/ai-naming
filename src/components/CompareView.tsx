@@ -52,7 +52,7 @@ function NameCard({
               {lastName}{s.name}
             </span>
             <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.45)" }}>
-              {s.hanja}{s.meaning ? ` · ${s.meaning.split('.')[0].split(',')[0].substring(0, 30)}` : ""}
+              {s.hanja}{s.hanjaReading ? ` · ${s.hanjaReading}` : ""}
             </span>
           </div>
           {/* Virtues */}
