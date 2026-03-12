@@ -11,7 +11,7 @@ export function buildPrompt(form: NamingForm): string {
   const genderLabel =
     form.babyGender === "boy" ? "아들" : form.babyGender === "girl" ? "딸" : "미정";
 
-  return `당신은 한국의 작명 전문가입니다. 아래 부부 정보를 바탕으로 아이의 이름 3가지를 추천해 주세요.
+  return `당신은 한국의 작명 전문가입니다. 아래 부부 정보를 바탕으로 아이의 이름 9가지를 추천해 주세요.
 
 [부부 정보]
 • 남편: ${form.husband.name}${form.husband.hanja ? ` (${form.husband.hanja})` : ""}${form.husband.meaning ? ` — 뜻: ${form.husband.meaning}` : ""}
